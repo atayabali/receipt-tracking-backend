@@ -1,7 +1,9 @@
 import cors from "cors";
 import express from "express";
-import { fetchImageAsBlob, uploadImageBlob } from "./uploadService";
+import { convertImageToStream, uploadImage } from "./uploadService.js";
+import dotenv from 'dotenv';
 
+dotenv.config();
 //Setup express
 var app = express();
 app.use(cors());
@@ -21,11 +23,12 @@ app.get("/", (req, res) => {
 });
 
 app.post("/uploadImage", async (req, res) => {
-  var responseBlob = await fetchImageAsBlob(req.body.image);
-  return await uploadImageBlob(responseBlob, req.body.fileName);
+  var buffer = await convertImageToStream(req.body.image, req.body.platform);
+  return await uploadImage(buffer, req.body.fileName, req.body.mimeType);
 });
 
 // Start the server
+console.log(process.env.PORT)
 app.listen(process.env.PORT, () => {
   console.log(`Server is running on http://localhost:${process.env.PORT}`);
 });

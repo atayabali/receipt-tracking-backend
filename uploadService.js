@@ -1,54 +1,62 @@
 
 import {
-    S3Client
+  S3Client
 } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
-import fetch from "node-fetch";
+import * as FileSystem from 'fs';
+import { randomUUID } from "node:crypto";
+import { Readable } from "node:stream";
 
-export default async function uploadImageBlob(imageBlob, fileName) {
+function getImageBufferForWeb(imageUri){
+  //uri from web begins with data:image/png;base64, that needs to be removed before converted to buffer
+  var extractedUri = imageUri.split(',')[1];
+  return Buffer.from(extractedUri);
+}
+
+async function getImageBufferForMobile(imageUri){
+  //uri from mobile begins with file:///var/mobile/Containers/Data/Application/B6366CCC-14A8-42DC-886E-58604DAD1496
   try {
-    const parallelUploads3 = new Upload({
-      client: new S3Client({}),
+    // Read the file from the local URI
+    const fileContent = await FileSystem.readAsStringAsync(imageUri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    // Convert Base64 string to binary data
+    return Buffer.from(fileContent, 'base64');
+  } catch (error) {
+    console.error('Error reading file:', error);
+  }
+}
+
+export async function convertImageToStream(imageUri, platform) {
+  var buffer = (platform === 'web') 
+  ? getImageBufferForWeb(imageUri) 
+  : await getImageBufferForMobile(imageUri);
+  return buffer
+}
+
+function generateUniqueKey(){
+  const uuid = randomUUID();
+  return `${uuid}.png`;
+}
+export async function uploadImage(buffer, fileName, mimeType) {
+  var bufferStream = new Readable();
+  bufferStream.push(buffer); 
+  bufferStream.push(null); 
+  try {
+    const upload = new Upload({
+      client: new S3Client({ region: "us-east-1"}),
       params: { 
-        Bucket: process.env.S3_BUCKET_NAME,//`${bucketName}.s3express-zone-id.us-east-1.amazonaws.com', 
-        Key: fileName, 
-        Body: imageBlob 
+        Bucket: process.env.S3_BUCKET_NAME, 
+        Key: generateUniqueKey(), 
+        Body: bufferStream,
+        ContentType: mimeType,
       }
     });
 
-    parallelUploads3.on("httpUploadProgress", (progress) => {
-      console.log(progress);
-    });
-
-    await parallelUploads3.done();
+    const result = await upload.done(); 
+    console.log("Result: ", result);
+    return result.$metadata.httpStatusCode;
   } catch (e) {
     console.log(e);
   }
 }
-
-export default async function fetchImageAsBlob(imageUrl) {
-  try {
-    const response = await fetch(imageUrl);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch image: ${response.status}`);
-    }
-    
-    var blob = await response.blob();
-    console.log(blob);
-
-    return blob;
-  } catch (error) {
-    console.error("Error fetching image:", error);
-  }
-}
-
-// Put an object into an Amazon S3 bucket.
-// await s3Client.send(
-//   new PutObjectCommand({
-//     Bucket: bucketName,
-//     Key: "my-first-object.txt",
-//     Body: "Hello JavaScript SDK!",
-//   }),
-// );
-// });
