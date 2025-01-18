@@ -1,9 +1,8 @@
 import cors from "cors";
 import express from "express";
-import { convertImageToStream, uploadImage } from "./uploadService.js";
 import dotenv from 'dotenv';
-
-dotenv.config();
+import { createPresignedUrlWithClient } from "./signedUrlService.js";
+dotenv.config(); 
 //Setup express
 var app = express();
 app.use(cors());
@@ -15,6 +14,8 @@ app.use(function (req, res, next) {
   );
   next();
 });
+
+
 // Middleware to parse JSON (if needed)
 app.use(express.json()); //Need to understand this better, but req in callback is empty without this
 
@@ -22,10 +23,20 @@ app.get("/", (req, res) => {
   res.send("Welcome to the server!");
 });
 
-app.post("/uploadImage", async (req, res) => {
-  var buffer = await convertImageToStream(req.body.image, req.body.platform);
-  return await uploadImage(buffer, req.body.fileName, req.body.mimeType);
+
+app.post("/presignedUrl", async(req, res) => {
+  var presignedUrl = await createPresignedUrlWithClient(req.body.fileName, req.body.mimeType)
+  console.log("url", presignedUrl);
+  res.send({url: presignedUrl});
 });
+
+// app.post("/uploadImage", async (req, res) => {
+//   var buffer = await convertImageToStream(req.body.image, req.body.platform);
+//   console.log("buffer " + buffer);
+//   var response = await uploadWithPresignedUrl(buffer);
+//   console.log(response);
+//   // return await uploadImage(buffer, req.body.fileName, req.body.mimeType);
+// });
 
 // Start the server
 console.log(process.env.PORT)
