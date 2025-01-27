@@ -1,7 +1,8 @@
 import cors from "cors";
 import express from "express";
 import dotenv from "dotenv";
-import { summaryRouter } from "./routes/expense.js";
+import { router as expenseRouter } from "./routes/expense.js";
+import { router as subExpense } from "./routes/subExpense.js";
 import { router as imageUploadRouter } from "./routes/imageUpload.js";
 dotenv.config();
 //Setup express
@@ -20,8 +21,6 @@ app.use(function (req, res, next) {
   next();
 });
 
-
-
 app.get("/", (req, res) => {
   res.send("Welcome to the server!");
 });
@@ -30,11 +29,12 @@ app.get("/test", (req, res) => {
   res.status(200).send("<h1>Nodejs Mysql apps</h1>");
 });
 
-app.post("/uploadImage", imageUploadRouter);
+
 
 //routes
-app.use("/api/v1/expenses", summaryRouter);
-
+app.use("/uploadImage", imageUploadRouter);
+app.use("/api/v1/expenses", expenseRouter);
+app.use("/api/v1/subexpenses", subExpense);
 
 // Start the server
 app.listen(process.env.PORT, () => {

@@ -2,13 +2,17 @@ import express from "express";
 import {
   getExpenseById,
   getExpenses,
+  postExpense
 } from "../controllers/expenseController.js";
-const summaryRouter = express.Router(); //router object - mini app that lives inside main application.
+const router = express.Router(); //router object - mini app that lives inside main application.
 
 //GET All Expense Summaries
-summaryRouter.get("/all", getExpenses);
+router.get("/all", getExpenses);
 
 //GET individual summary by Id
-summaryRouter.get("/:id", getExpenseById);
+router.get("/:id", getExpenseById);
 
-export { summaryRouter };
+//POST expense
+router.post("/", postExpense);
+
+export { router };
