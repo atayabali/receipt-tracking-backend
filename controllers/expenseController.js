@@ -37,18 +37,18 @@ export const getExpenseById = async (req, res) => {
 };
 
 export const postExpense = async (req, res) => {
+  const subItemInsertSql = `INSERT INTO sub_expense (expenseId, name, cost, quantity) VALUES ?`;
+  const expenseInsertSql = `INSERT INTO expenses (merchant, totalCost, date, hasSubItems) VALUES (?, ?, ?, ?)`;
+  const expenseData = [[req.body.merchant], [req.body.totalCost], [req.body.expenseDate], [req.body.includeBreakdown]]
+  var connection = await mySqlPool.getConnection();
   try {
-    console.log(req.body);
-    await mySqlPool.execute(
-      `INSERT INTO expenses 
-      (merchant, totalCost, date, hasSubItems) 
-      VALUES 
-      ('${req.body.merchant}', 
-      ${req.body.totalCost}, 
-      '${req.body.expenseDate}', 
-      ${req.body.hasSubItems})`
-    );
-    res.status(200).send();
+    const [expenseRows] = await connection.query(expenseInsertSql, expenseData);
+    var expenseId = expenseRows.insertId;
+    if(req.body.includeBreakdown){
+      var subItemsData = req.body.subItems.map(subItem => [[expenseId], [subItem.name], [subItem.cost], [subItem.quantity]])
+      const [subExpenseRows] = await connection.query(subItemInsertSql, [subItemsData]);
+    }
+    res.status(200).send({expenseId});
   } catch (error) {
     res.status(500).send(error);
   }
