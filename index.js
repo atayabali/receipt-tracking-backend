@@ -1,7 +1,6 @@
 import cors from "cors";
 import express from "express";
 import dotenv from "dotenv";
-import ServerlessHttp from "serverless-http";
 import { router as expenseRouter } from "./routes/expense.js";
 import { router as subExpense } from "./routes/subExpense.js";
 import { router as imageUploadRouter } from "./routes/imageUpload.js";
@@ -41,7 +40,4 @@ app.listen(process.env.PORT, () => {
   console.log(`Server is running on http://localhost:${process.env.PORT}`);
 });
 
-const serverless = ServerlessHttp(app);
-export { serverless }
-// Start the server
 
