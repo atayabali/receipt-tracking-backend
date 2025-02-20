@@ -50,7 +50,7 @@ export const postExpense = async (req, res) => {
       var subItemsData = req.body.subItems.map(subItem => [[expenseId], [subItem.name], [subItem.cost], [subItem.quantity]])
       const [subExpenseRows] = await connection.query(subItemInsertSql, [subItemsData]);
     }
-    res.status(200).send({expenseId});
+    res.status(200).send({expenseId}); 
   } catch (error) {
     res.status(500).send(error);
   }
