@@ -11,9 +11,12 @@ app.use(cors());
 
 // Middleware to parse JSON (if needed)
 app.use(express.json()); //Need to understand this better, but req in callback is empty without this
-
+const allowedOrigins = ["http://localhost:8081", "http://receipt-tracking-frontend-v2.s3-website-us-east-1.amazonaws.com"];
 app.use(function (req, res, next) {
-  res.header("Access-Control-Allow-Origin", "http://localhost:8081");
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header("Access-Control-Allow-Origin", origin);
+  }
   res.header(
     "Access-Control-Allow-Headers",
     "Origin, X-Requested-With, Content-Type, Accept"
