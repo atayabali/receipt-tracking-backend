@@ -29,15 +29,13 @@ app.get("/test", (req, res) => {
   res.status(200).send("<h1>Nodejs Mysql apps</h1>");
 });
 
-
-
 //routes
 app.use("/uploadImage", imageUploadRouter);
 app.use("/api/v1/expenses", expenseRouter);
 app.use("/api/v1/subexpenses", subExpense);
 
-app.listen(process.env.PORT, () => {
-  console.log(`Server is running on http://localhost:${process.env.PORT}`);
+app.listen(5000, () => {
+  console.log(`Server is running on http://localhost:5000`);
 });
 
 

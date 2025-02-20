@@ -1,4 +1,6 @@
-import { mySqlPool } from "../db.js";
+import { awsSqlPool, localSqlPool } from "../db.js";
+
+const mySqlPool = true ? awsSqlPool : localSqlPool;
 
 export const getExpenses = async (req, res) => {
   try {
