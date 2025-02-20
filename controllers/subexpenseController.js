@@ -1,6 +1,6 @@
-import { awsSqlPool, localSqlPool } from "../db.js";
+import { getSqlPool } from "../db.js";
 
-const mySqlPool = true ? awsSqlPool : localSqlPool;
+const mySqlPool = await getSqlPool();
 export const getSubItemsByExpenseId = async (req, res) => {
   try {
     const data = await mySqlPool.query(
