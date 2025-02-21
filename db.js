@@ -9,11 +9,12 @@ export const getSqlPool = async () => {
 
     if(useAWS){
         var poolVars = await getRDSSecret();
+        console.log(poolVars);
         sqlPool = mysql.createPool({
             host: poolVars.host,
             user: poolVars.username,
             password: poolVars.password,
-            database: poolVars.dnname,
+            database: poolVars.dbname,
         });
         
     } else {
@@ -24,4 +25,5 @@ export const getSqlPool = async () => {
             database: process.env.LOCAL_DB
         });
     }
+    return sqlPool;
 }
