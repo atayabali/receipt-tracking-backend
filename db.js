@@ -9,7 +9,6 @@ export const getSqlPool = async () => {
 
     if(useAWS){
         var poolVars = await getRDSSecret();
-        console.log(poolVars);
         sqlPool = mysql.createPool({
             host: poolVars.host,
             user: poolVars.username,
