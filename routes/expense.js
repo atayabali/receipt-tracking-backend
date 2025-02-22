@@ -1,5 +1,6 @@
 import express from "express";
 import {
+  deleteExpense,
   getExpenseById,
   getExpenses,
   postExpense
@@ -15,4 +16,6 @@ router.get("/:id", getExpenseById);
 //POST expense
 router.post("/", postExpense);
 
+//DELETE expense and subexpenses
+router.delete("/:id", deleteExpense);
 export { router };

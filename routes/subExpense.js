@@ -1,10 +1,13 @@
 import express from "express";
-import { getSubItemsByExpenseId } from "../controllers/subexpenseController.js";
+import { deleteSubExpense, getSubExpensesByExpenseId, postSubExpense } from "../controllers/subexpenseController.js";
 const router = express.Router(); 
 
 //GET individual summary by Id
-router.get("/:expenseId", getSubItemsByExpenseId);
+router.get("/:expenseId", getSubExpensesByExpenseId);
 
+router.post("", postSubExpense);
+
+router.delete("/:subExpenseId", deleteSubExpense);
 //POST expense
 // router.post("/", postExpense);
 
