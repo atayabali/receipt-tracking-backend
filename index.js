@@ -33,7 +33,7 @@ app.get("/test", (req, res) => {
 });
 
 //routes
-app.use("/uploadImage", imageUploadRouter);
+app.use("/images", imageUploadRouter);
 app.use("/api/v1/expenses", expenseRouter);
 app.use("/api/v1/subexpenses", subExpense);
 
