@@ -4,10 +4,11 @@ import {
   TextractClient,
   AnalyzeExpenseCommand,
 } from "@aws-sdk/client-textract"; // ES Modules import
+import { TextractExpense } from "amazon-textract-response-parser";
 
 const textractClient = new TextractClient({ region: "us-east-1" });
 const bucketName = "image-upload-practice1";
-export const analyzeExpense = async (key) => {
+export const analyzeExpenseObject = async (key) => {
   const command = new AnalyzeExpenseCommand({
     Document: {
       S3Object: {
@@ -21,8 +22,57 @@ export const analyzeExpense = async (key) => {
     return response;
   } catch (error) {
     console.error("Error processing Textract:", error);
-    // res.status(500).json({ error: 'Error analyzing document' });
   }
+};
+
+export const formatExpenseResponse = (textractResponse) => {
+  const expense = new TextractExpense(textractResponse);
+  const expenseDoc = [...expense.iterDocs()][0];
+
+  var merchant = expenseDoc.getSummaryFieldByType("VENDOR_NAME")?.value.text;
+  var expenseDate = expenseDoc.getSummaryFieldByType("INVOICE_RECEIPT_DATE")
+    ?.value.text;
+  var totalPrice = expenseDoc.getSummaryFieldByType("AMOUNT_PAID")?.value.text;
+  totalPrice = totalPrice.includes("$") ? totalPrice.split("$")[1] : totalPrice;
+
+  const itemQuantities = {};
+  const itemPrices = {};
+  for (const group of expenseDoc.iterLineItemGroups()) {
+    for (const item of group.iterLineItems()) {
+      var itemName = item.getFieldByType("ITEM");
+      if (itemName == null) continue;
+      var itemNameText = itemName.value.text;
+      var price = item.getFieldByType("PRICE")?.value.text;
+      var itemCost = price.includes("$") ? price.split("$")[1] : price;
+
+      itemPrices[itemNameText] = itemCost;
+
+      if (itemNameText in itemQuantities) {
+        itemQuantities[itemNameText]++;
+      } else {
+        itemQuantities[itemNameText] = 1;
+      }
+      var itemQnty = itemQuantities[itemNameText];
+      console.log(`${itemNameText} costs ${itemCost} quantity ${itemQnty}`);
+    }
+  }
+
+  var subItems = [];
+  for (const key in itemPrices) {
+    subItems.push({
+      name: key,
+      cost: parseFloat(itemPrices[key]),
+      quantity: parseFloat(itemQuantities[key]),
+    });
+  }
+  var data = {
+    merchant: merchant,
+    totalCost: parseFloat(totalPrice),
+    expenseDate: new Date(expenseDate).toLocaleDateString(),
+    hasSubItems: subItems.length > 0,
+    subItems: subItems,
+  };
+  return data;
 };
 
 export async function createPresignedUrlWithClient(key, mimeType) {
