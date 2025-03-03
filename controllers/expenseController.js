@@ -54,13 +54,9 @@ export const postExpense = async (req, res) => {
 
     const [expenseRows] = await connection.query(expenseInsertSql, expenseData);
     var expenseId = expenseRows.insertId;
-    // console.log(req.body);
     if(req.body.includeBreakdown){
-      // console.log('in here');
       var subExpenseData = req.body.subExpenses.map(subExpense => [[expenseId], [subExpense.name], [subExpense.cost], [subExpense.quantity]])
-      // console.log(subExpenseData);
       const [subExpenseRows] = await connection.query(subExpenseInsertSql, [subExpenseData]);
-      // console.log(subExpenseRows);
     }
     res.status(200).send({expenseId}); 
   } catch (error) {

@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { router as expenseRouter } from "./routes/expense.js";
 import { router as subExpense } from "./routes/subExpense.js";
 import { router as imageUploadRouter } from "./routes/imageUpload.js";
+import awsServererlessExpress from 'aws-serverless-express'
 dotenv.config();
 //Setup express
 var app = express();
@@ -36,6 +37,9 @@ app.get("/test", (req, res) => {
 app.use("/images", imageUploadRouter);
 app.use("/api/v1/expenses", expenseRouter);
 app.use("/api/v1/subexpenses", subExpense);
+
+// const server = awsServererlessExpress.createServer(app);
+// export const handler = (event, context) => awsServerlessExpress.proxy(server, event, context);
 
 app.listen(5000, () => {
   console.log(`Server is running on http://localhost:5000`);

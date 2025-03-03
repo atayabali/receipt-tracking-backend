@@ -83,5 +83,9 @@ export async function createPresignedUrlWithClient(key, mimeType) {
     ContentType: mimeType,
     // ACL: 'bucket-owner-full-control'
   });
-  return await getSignedUrl(client, command, { expiresIn: 3600 });
+  try {
+    return await getSignedUrl(client, command, { expiresIn: 3600 });
+  } catch (e) {
+    console.log(e);
+  }
 }

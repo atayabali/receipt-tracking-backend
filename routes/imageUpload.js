@@ -6,7 +6,7 @@ import {
 } from "../controllers/imageUploadController.js";
 const router = express.Router();
 
-router.post("/getSignedUrl", async (req, res) => {
+router.post("/s3Url", async (req, res) => {
   var presignedUrl = await createPresignedUrlWithClient(
     req.body.fileName,
     req.body.mimeType

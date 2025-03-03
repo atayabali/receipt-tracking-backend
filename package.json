@@ -17,6 +17,7 @@
     "@aws-sdk/lib-storage": "^3.726.1",
     "@aws-sdk/s3-request-presigner": "^3.731.0",
     "amazon-textract-response-parser": "^0.4.3",
+    "aws-serverless-express": "^3.4.0",
     "body-parser": "^1.20.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
