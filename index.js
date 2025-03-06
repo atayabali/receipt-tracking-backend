@@ -38,11 +38,11 @@ app.use("/images", imageUploadRouter);
 app.use("/api/v1/expenses", expenseRouter);
 app.use("/api/v1/subexpenses", subExpense);
 
-// const server = awsServererlessExpress.createServer(app);
-// export const handler = (event, context) => awsServerlessExpress.proxy(server, event, context);
+const server = awsServererlessExpress.createServer(app);
+export const handler = (event, context) => awsServerlessExpress.proxy(server, event, context);
 
-app.listen(5000, () => {
-  console.log(`Server is running on http://localhost:5000`);
-});
+// app.listen(5000, () => {
+//   console.log(`Server is running on http://localhost:5000`);
+// });
 
 
