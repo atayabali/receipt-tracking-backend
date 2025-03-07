@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import { router as expenseRouter } from "./routes/expense.js";
 import { router as subExpense } from "./routes/subExpense.js";
 import { router as imageUploadRouter } from "./routes/imageUpload.js";
-import awsServererlessExpress from 'aws-serverless-express'
+// import awsServererlessExpress from 'aws-serverless-express'
 dotenv.config();
 //Setup express
 var app = express();
@@ -12,6 +12,8 @@ app.use(cors());
 
 // Middleware to parse JSON (if needed)
 app.use(express.json()); //Need to understand this better, but req in callback is empty without this
+app.use(express.urlencoded({extended: true}));
+
 const allowedOrigins = ["http://localhost:8081", "http://receipt-tracking-frontend-v2.s3-website-us-east-1.amazonaws.com"];
 app.use(function (req, res, next) {
   const origin = req.headers.origin;
@@ -38,11 +40,11 @@ app.use("/images", imageUploadRouter);
 app.use("/api/v1/expenses", expenseRouter);
 app.use("/api/v1/subexpenses", subExpense);
 
-const server = awsServererlessExpress.createServer(app);
-export const handler = (event, context) => awsServerlessExpress.proxy(server, event, context);
-
-// app.listen(5000, () => {
-//   console.log(`Server is running on http://localhost:5000`);
-// });
+// const server = awsServererlessExpress.createServer(app);
+// export const handler = (event, context) => awsServerlessExpress.proxy(server, event, context);
+const port = process.env.PORT || 5000;
+app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
+});
 
 
