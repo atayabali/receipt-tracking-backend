@@ -19,6 +19,30 @@ export const getSubExpensesByExpenseId = async (req, res) => {
   }
 };
 
+export const getAllOrSearchSubExpenses = async (req, res) => {
+  var connection = await mySqlPool.getConnection();
+  console.log("here", req.params.searchQuery);
+  var getSql = `SELECT name, cost, date 
+                FROM sub_expense se 
+                JOIN expenses ex ON se.expenseId = ex.id `
+  if(req.params.searchQuery){
+    getSql = getSql + `WHERE name like '%${req.params.searchQuery}%' `
+  }
+  getSql = getSql + `ORDER BY date desc`
+  try {
+    const data = await connection.query(getSql);
+    var subExpenses = data[0].map((row) => ({
+      ...row,
+      date: new Date(row.date).toLocaleDateString(), // Or use toLocaleString()
+    }));
+    res.status(200).send(subExpenses);
+  } catch (error) {
+    res.status(500).send(error);
+  } finally {
+    connection.release();
+  }
+}
+
 export const postSubExpense = async (req, res) => {
   const expenseGetSql = `SELECT EXISTS (SELECT * FROM expenses WHERE id = ?) AS doesExpenseExist`
   const subExpenseInsertSql = `INSERT INTO sub_expense (expenseId, name, cost, quantity) VALUES (?)`;
