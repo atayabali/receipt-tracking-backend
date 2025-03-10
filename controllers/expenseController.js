@@ -11,6 +11,7 @@ export const getExpenses = async (req, res) => {
         ,totalCost
         ,date
         ,hasSubItems 
+        ,imageKey
       FROM expenses 
       ORDER BY date desc`
     );
@@ -46,12 +47,11 @@ export const getExpenseById = async (req, res) => {
 };
 
 export const postExpense = async (req, res) => {
-  const subExpenseInsertSql = `INSERT INTO sub_expense (expenseId, name, cost, quantity) VALUES ?`;
-  const expenseInsertSql = `INSERT INTO expenses (merchant, totalCost, date, hasSubItems) VALUES (?, ?, ?, ?)`;
-  const expenseData = [[req.body.merchant], [req.body.totalCost], [req.body.expenseDate], [req.body.includeBreakdown]]
+  const expenseInsertSql = `INSERT INTO expenses (merchant, totalCost, date, hasSubItems, imageKey ) VALUES (?, ?, ?, ?, ?)`;
+  const subExpenseInsertSql = `INSERT INTO sub_expenses (expenseId, name, cost, quantity) VALUES ?`;
+  const expenseData = [[req.body.merchant], [req.body.totalCost], [req.body.expenseDate], [req.body.includeBreakdown], [req.body.imageKey]]
   var connection = await mySqlPool.getConnection();
   try {
-
     const [expenseRows] = await connection.query(expenseInsertSql, expenseData);
     var expenseId = expenseRows.insertId;
     if(req.body.includeBreakdown){
@@ -68,7 +68,7 @@ export const postExpense = async (req, res) => {
 
 export const deleteExpense = async (req, res) => {
   const expenseGetSql = `SELECT EXISTS (SELECT * FROM expenses WHERE id = ?) AS doesExpenseExist`
-  const deleteSubExpensesSql = `DELETE FROM sub_expense WHERE expenseId = ?`;
+  const deleteSubExpensesSql = `DELETE FROM sub_expenses WHERE expenseId = ?`;
   const deleteExpenseSql = `DELETE FROM expenses WHERE id = ?`;
   var expenseId = req.params.id;
   var connection = await mySqlPool.getConnection();

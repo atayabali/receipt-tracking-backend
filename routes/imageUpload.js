@@ -3,6 +3,7 @@ import {
   analyzeExpenseObject,
   createPresignedUrlWithClient,
   formatExpenseResponse,
+  getS3Object,
 } from "../controllers/imageUploadController.js";
 const router = express.Router();
 
@@ -21,4 +22,5 @@ router.get("/analyzeExpense/:objectName", async (req, res) => {
   res.status(200).json(expenseData);
 });
 
+router.get('/s3Object/:objectName', getS3Object)
 export { router };

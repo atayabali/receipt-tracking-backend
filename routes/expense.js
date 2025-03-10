@@ -18,4 +18,5 @@ router.post("/", postExpense);
 
 //DELETE expense and subexpenses
 router.delete("/:id", deleteExpense);
+
 export { router };

@@ -1,4 +1,4 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import {
   TextractClient,
@@ -87,5 +87,20 @@ export async function createPresignedUrlWithClient(key, mimeType) {
     return await getSignedUrl(client, command, { expiresIn: 3600 });
   } catch (e) {
     console.log(e);
+  }
+}
+
+export const getS3Object = async (req, res) => {
+  const client = new S3Client({ region: "us-east-1" });
+  const command = new GetObjectCommand({
+    Bucket: bucketName,
+    Key: req.params.objectName,
+  })
+  try {
+    const data = await getSignedUrl(client, command, { expiresIn: 3600 });
+    res.status(200).json({imageUri: data});
+  } catch (error) {
+    console.error("Error retrieving object:", error);
+    res.status(500);
   }
 }

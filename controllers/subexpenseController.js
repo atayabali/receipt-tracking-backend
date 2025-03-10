@@ -7,7 +7,7 @@ export const getSubExpensesByExpenseId = async (req, res) => {
   try {
     const data = await connection.query(
       `SELECT id, cost, quantity, name 
-        FROM sub_expense
+        FROM sub_expenses
         WHERE expenseId = ${req.params.expenseId}`
     );
     var subExpenses = data[0];
@@ -21,9 +21,8 @@ export const getSubExpensesByExpenseId = async (req, res) => {
 
 export const getAllOrSearchSubExpenses = async (req, res) => {
   var connection = await mySqlPool.getConnection();
-  console.log("here", req.params.searchQuery);
   var getSql = `SELECT name, cost, date 
-                FROM sub_expense se 
+                FROM sub_expenses se 
                 JOIN expenses ex ON se.expenseId = ex.id `
   if(req.params.searchQuery){
     getSql = getSql + `WHERE name like '%${req.params.searchQuery}%' `
@@ -33,7 +32,7 @@ export const getAllOrSearchSubExpenses = async (req, res) => {
     const data = await connection.query(getSql);
     var subExpenses = data[0].map((row) => ({
       ...row,
-      date: new Date(row.date).toLocaleDateString(), // Or use toLocaleString()
+      date: new Date(row.date).toLocaleDateString(),
     }));
     res.status(200).send(subExpenses);
   } catch (error) {
@@ -45,7 +44,7 @@ export const getAllOrSearchSubExpenses = async (req, res) => {
 
 export const postSubExpense = async (req, res) => {
   const expenseGetSql = `SELECT EXISTS (SELECT * FROM expenses WHERE id = ?) AS doesExpenseExist`
-  const subExpenseInsertSql = `INSERT INTO sub_expense (expenseId, name, cost, quantity) VALUES (?)`;
+  const subExpenseInsertSql = `INSERT INTO sub_expenses (expenseId, name, cost, quantity) VALUES (?)`;
   var expenseId = req.body.expenseId;
   const subExpenseData = [expenseId, req.body.name, req.body.cost, req.body.quantity];
   var connection = await mySqlPool.getConnection();
@@ -70,8 +69,8 @@ export const postSubExpense = async (req, res) => {
 }; 
 
 export const deleteSubExpense = async(req, res) => {
-  const subExpenseGetSql = `SELECT EXISTS (SELECT * FROM sub_expense WHERE id = ?) AS doesExist`
-  const subExpenseDeleteSql = `DELETE FROM sub_expense WHERE id = ?`;
+  const subExpenseGetSql = `SELECT EXISTS (SELECT * FROM sub_expenses WHERE id = ?) AS doesExist`
+  const subExpenseDeleteSql = `DELETE FROM sub_expenses WHERE id = ?`;
   var connection = await mySqlPool.getConnection();
   try {
     var subExpenseId = req.params.subExpenseId;
