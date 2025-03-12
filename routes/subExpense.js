@@ -12,8 +12,4 @@ router.post("", postSubExpense);
 
 router.delete("/:subExpenseId", deleteSubExpense);
 
-
-//POST expense
-// router.post("/", postExpense);
-
 export { router };

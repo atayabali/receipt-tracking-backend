@@ -4,14 +4,12 @@ import dotenv from "dotenv";
 import { router as expenseRouter } from "./routes/expense.js";
 import { router as subExpense } from "./routes/subExpense.js";
 import { router as imageUploadRouter } from "./routes/imageUpload.js";
-// import awsServererlessExpress from 'aws-serverless-express'
+import { errorMiddleware } from "./errorMiddleware.js";
+
 dotenv.config();
-//Setup express
 var app = express();
 app.use(cors());
-
-// Middleware to parse JSON (if needed)
-app.use(express.json()); //Need to understand this better, but req in callback is empty without this
+app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 
 const allowedOrigins = ["http://localhost:8081", "http://receipt-tracking-frontend-v2.s3-website-us-east-1.amazonaws.com"];
@@ -26,22 +24,14 @@ app.use(function (req, res, next) {
   );
   next();
 });
-//base route won't work in lamdba
-// app.get("/", (req, res) => { 
-//   res.send("Welcome to the server!");
-// });
-
-app.get("/test", (req, res) => {
-  res.status(200).send("<h1>Nodejs Mysql apps</h1>");
-});
 
 //routes
 app.use("/images", imageUploadRouter);
 app.use("/api/v1/expenses", expenseRouter);
 app.use("/api/v1/subexpenses", subExpense);
 
-// const server = awsServererlessExpress.createServer(app);
-// export const handler = (event, context) => awsServerlessExpress.proxy(server, event, context);
+app.use(errorMiddleware); 
+
 const port = process.env.PORT || 5000;
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

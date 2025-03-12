@@ -5,7 +5,7 @@ dotenv.config(); //loads in env variables from .env file
 
 export const getSqlPool = async () => {
     let sqlPool;
-    var useAWS = true;
+    var useAWS = false;
 
     if(useAWS){
         var poolVars = await getRDSSecret();

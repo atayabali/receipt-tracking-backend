@@ -1,93 +1,74 @@
 import { getSqlPool } from "../db.js";
+import queries from "../sqlQueries.json" with { type: "json" };
 
-const mySqlPool = await getSqlPool();
-
-export const getExpenses = async (req, res) => {
+async function tryCatchWrapper(fn, next) {
+  const mySqlPool = await getSqlPool();
   var connection = await mySqlPool.getConnection();
-  try {
-    const data = await connection.query(
-      `SELECT id
-        ,merchant
-        ,totalCost
-        ,date
-        ,hasSubItems 
-        ,imageKey
-      FROM expenses 
-      ORDER BY date desc`
-    );
-    var expenses = data[0].map((row) => ({
-      ...row,
-      hasSubItems: new Boolean(row.hasSubItems),
-      date: new Date(row.date).toLocaleDateString(), // Or use toLocaleString()
-    }));
-    res.status(200).send(expenses);
-  } catch (error) {
-    res.status(500).send(error);
-  } finally {
-    connection.release();
+    try{
+      await fn(connection);
+    } catch (err){
+      next(err);
+    } finally {
+      connection.release();
+    }
+}
+
+export const getExpenses = async (req, res, next) => {
+  async function getExpensesQuery(connection){
+    const [rows] = await connection.query(queries.getAllExpenses);
+      var expenses = rows.map((row) => ({
+        ...row,
+        hasSubItems: new Boolean(row.hasSubItems),
+        date: new Date(row.date).toLocaleDateString(), 
+      }));
+      res.send(expenses);
   }
+
+  await tryCatchWrapper(getExpensesQuery, next);
 };
 
-//Where did i need this again, maybe for postman testing
-export const getExpenseById = async (req, res) => {
-  var connection = await mySqlPool.getConnection();
-
-  try {
+export const getExpenseById = async (req, res, next) => {
+  async function getExpenseByIdQuery(connection) {
     var expenseId = req.params.id;
-    const data = await connection.query(
-      `SELECT id, merchant, totalCost, date, hasSubItems FROM expenses WHERE id = ${expenseId}`
-    );
-    var summary = data[0];
-    res.status(200).send(summary);
-  } catch (error) {
-    res.status(500).send(error);
-  } finally {
-    connection.release();
+    const [rows] = await connection.query(queries.getExpenseById, expenseId);
+    console.log(rows);
+    if(rows.length === 0){
+      throw new Error("Expense not found");
+    }
+    res.send(rows);
   }
+
+  await tryCatchWrapper(getExpenseByIdQuery, next);
 };
 
-export const postExpense = async (req, res) => {
-  const expenseInsertSql = `INSERT INTO expenses (merchant, totalCost, date, hasSubItems, imageKey ) VALUES (?, ?, ?, ?, ?)`;
-  const subExpenseInsertSql = `INSERT INTO sub_expenses (expenseId, name, cost, quantity) VALUES ?`;
-  const expenseData = [[req.body.merchant], [req.body.totalCost], [req.body.expenseDate], [req.body.includeBreakdown], [req.body.imageKey]]
-  var connection = await mySqlPool.getConnection();
-  try {
-    const [expenseRows] = await connection.query(expenseInsertSql, expenseData);
+
+export const postExpense = async (req, res, next) => {
+  async function postExpenseQuery(connection) {
+    const expenseData = [[req.body.merchant], [req.body.totalCost], [req.body.expenseDate], [req.body.includeBreakdown], [req.body.imageKey]]
+    const [expenseRows] = await connection.query(queries.createExpense, expenseData);
     var expenseId = expenseRows.insertId;
     if(req.body.includeBreakdown){
       var subExpenseData = req.body.subExpenses.map(subExpense => [[expenseId], [subExpense.name], [subExpense.cost], [subExpense.quantity]])
-      const [subExpenseRows] = await connection.query(subExpenseInsertSql, [subExpenseData]);
+      const [subExpenseRows] = await connection.query(queries.createSubExpenses, [subExpenseData]);
     }
-    res.status(200).send({expenseId}); 
-  } catch (error) {
-    res.status(500).send(error);
-  } finally {
-    connection.release();
-  }
+    res.send({expenseId}); 
+  } 
+
+  await tryCatchWrapper(postExpenseQuery, next);
 }; 
 
-export const deleteExpense = async (req, res) => {
-  const expenseGetSql = `SELECT EXISTS (SELECT * FROM expenses WHERE id = ?) AS doesExpenseExist`
-  const deleteSubExpensesSql = `DELETE FROM sub_expenses WHERE expenseId = ?`;
-  const deleteExpenseSql = `DELETE FROM expenses WHERE id = ?`;
+export const deleteExpense = async (req, res, next) => {
   var expenseId = req.params.id;
-  var connection = await mySqlPool.getConnection();
-
-  try {
-    //Check Expense exists
-    const data = await connection.query(expenseGetSql, expenseId);
-    var response = data[0][0]
-    if(response.doesExpenseExist){
+  async function deleteExpenseQuery(connection) {
+    const [rows] = await connection.query(queries.checkExpenseExistence, expenseId);
+    if(rows[0].doesExpenseExist){
       //Deleted SubExpenses and Expense
-      const [deletedRows] = await connection.query(deleteSubExpensesSql, expenseId);
-      const [deletedExpense] = await connection.query(deleteExpenseSql, expenseId);
-      res.status(200).send({deletedId: expenseId});
+      const [deletedRows] = await connection.query(queries.deleteSubExpenses, expenseId);
+      const [deletedExpense] = await connection.query(queries.deleteExpenseById, expenseId);
+      res.send({deletedId: expenseId});
     } else {
-      res.sendStatus(404).send("Expense not found")
+      throw new Error("Expense not found");
     }
-  } catch (error) {
-    res.status(500).send(error);
-  } finally {
-    connection.release();
-  }
+  } 
+  await tryCatchWrapper(deleteExpenseQuery, next);
 }; 

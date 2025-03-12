@@ -1,0 +1,13 @@
+{
+    "getAllExpenses": "SELECT id, merchant, totalCost, date, hasSubItems, imageKey FROM expenses ORDER BY date desc",
+    "getExpenseById": "SELECT id, merchant, totalCost, date, hasSubItems FROM expenses WHERE id = ?",
+    "createExpense": "INSERT INTO expenses (merchant, totalCost, date, hasSubItems, imageKey ) VALUES (?, ?, ?, ?, ?)",
+    "createSubExpenses": "INSERT INTO sub_expenses (expenseId, name, cost, quantity) VALUES ?",
+    "checkExpenseExistence": "SELECT EXISTS (SELECT * FROM expenses WHERE id = ?) AS doesExpenseExist",
+    "checkSubExpExistence": "SELECT EXISTS (SELECT * FROM sub_expenses WHERE id = ?) AS doesExist",
+    "deleteSubExpenses": "DELETE FROM sub_expenses WHERE expenseId = ?",
+    "deleteExpenseById": "DELETE FROM expenses WHERE id = ?",
+    "deleteSubExpenseById": "DELETE FROM sub_expenses WHERE id = ?",
+    "getSubExpensesByExpenseId": "SELECT id, cost, quantity, name FROM sub_expenses WHERE expenseId = ?",
+    "getSubExpensesWithDate": "SELECT name, cost, date FROM sub_expenses se JOIN expenses ex ON se.expenseId = ex.id "
+}
