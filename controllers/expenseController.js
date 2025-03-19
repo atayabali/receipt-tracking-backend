@@ -47,7 +47,7 @@ export const postExpense = async (req, res, next) => {
     const expenseData = [[req.body.merchant], [req.body.totalCost], [req.body.expenseDate], [req.body.includeBreakdown], [req.body.imageKey]]
     const [expenseRows] = await connection.query(queries.createExpense, expenseData);
     var expenseId = expenseRows.insertId;
-    if(req.body.includeBreakdown){
+    if(req.body.includeBreakdown && req.body.subExpenses.length > 0){
       var subExpenseData = req.body.subExpenses.map(subExpense => [[expenseId], [subExpense.name], [subExpense.cost], [subExpense.quantity]])
       const [subExpenseRows] = await connection.query(queries.createSubExpenses, [subExpenseData]);
     }
