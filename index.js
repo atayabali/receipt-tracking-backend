@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { router as expenseRouter } from "./routes/expense.js";
 import { router as subExpense } from "./routes/subExpense.js";
 import { router as imageUploadRouter } from "./routes/imageUpload.js";
+import {router as authRouter } from "./routes/auth.js";
 import { errorMiddleware } from "./errorMiddleware.js";
 
 dotenv.config();
@@ -12,7 +13,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 
-const allowedOrigins = ["http://localhost:8081", "http://receipt-tracking-frontend-v2.s3-website-us-east-1.amazonaws.com"];
+const allowedOrigins = ["http://localhost:8081", "http://receipt-tracking-frontend-v2.s3-website-us-east-1.amazonaws.com", "https://d39orc6f1pail6.cloudfront.net/" ];
 app.use(function (req, res, next) {
   const origin = req.headers.origin;
   if (allowedOrigins.includes(origin)) {
@@ -26,9 +27,10 @@ app.use(function (req, res, next) {
 });
 
 //routes
-app.use("/images", imageUploadRouter);
+app.use("/api/v1/images", imageUploadRouter);
 app.use("/api/v1/expenses", expenseRouter);
 app.use("/api/v1/subexpenses", subExpense);
+app.use("/api/v1/auth", authRouter )
 
 app.use(errorMiddleware); 
 
