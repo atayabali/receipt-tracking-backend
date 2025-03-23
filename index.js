@@ -7,6 +7,7 @@ import { router as imageUploadRouter } from "./routes/imageUpload.js";
 import {router as authRouter } from "./routes/auth.js";
 import { errorMiddleware } from "./errorMiddleware.js";
 import cookieParser from 'cookie-parser';
+import { verifyToken } from "./middleware/authToken.js";
 
 dotenv.config();
 const app = express();
@@ -41,7 +42,7 @@ app.use(express.urlencoded({ extended: true }));
 
 //routes
 app.use("/api/v1/images", imageUploadRouter);
-app.use("/api/v1/expenses", expenseRouter);
+app.use("/api/v1/expenses", verifyToken, expenseRouter);
 app.use("/api/v1/subexpenses", subExpense);
 app.use("/api/v1/auth", authRouter )
 

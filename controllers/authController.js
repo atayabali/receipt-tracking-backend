@@ -9,8 +9,8 @@ const mySqlPool = await getSqlPool();
 const connection = await mySqlPool.getConnection();
 
 export const createBucket = async (req, res) => {
-  const { guidName } = req.body;
-  const bucketName =  `receipts-${guidName}`; // Random GUID-based bucket name
+  const { bucketIdentifier } = req.body;
+  const bucketName =  `receipts-${bucketIdentifier}`; // Random GUID-based bucket name
 
   try {
     const command = new CreateBucketCommand({ Bucket: bucketName });

@@ -1,5 +1,6 @@
 import { getSqlPool } from "../db.js";
 import queries from "../sqlQueries.json" with { type: "json" };
+import jwt from 'jsonwebtoken';
 
 async function tryCatchWrapper(fn, next) {
   const mySqlPool = await getSqlPool();
@@ -14,6 +15,7 @@ async function tryCatchWrapper(fn, next) {
 }
 
 export const getExpenses = async (req, res, next) => {
+  console.log(req.user);
   async function getExpensesQuery(connection){
     const [rows] = await connection.query(queries.getAllExpenses);
       var expenses = rows.map((row) => ({
