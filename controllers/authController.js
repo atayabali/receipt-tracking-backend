@@ -21,31 +21,42 @@ export const createBucket = async (req, res) => {
   }
 };
 
+const generateAccessToken = (userId) => {
+  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "15m" });
+};
 
-// const JWT_SECRET = process.env.JWT_SECRET;
+const generateRefreshToken = (userId) => {
+  return jwt.sign({ userId }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
+};
 
 /**
  * User Registration (Sign Up)
  */
-export async function signUp(req, res){
+export async function signUp(req, res) {
   const { email, password, bucketName } = req.body;
 
   try {
-    const [userExists] = await connection.query('SELECT id FROM users WHERE email = ?', [email]);
+    const [userExists] = await connection.query('SELECT userId FROM userLogins WHERE email = ?', [email]);
     if (userExists.length > 0) {
       return res.status(400).json({ message: 'Email already in use' });
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const [newUser] = await connection.query('INSERT INTO users (email, password_hash, bucketName) VALUES (?, ?, ?)', [email, passwordHash, bucketName]);
-    var newUserId = newUser.insertId;
-    // Create an S3 bucket for the user
-    // createBucket(bucketName);
-    
-    const accessToken = jwt.sign({ userId: newUserId }, process.env.JWT_SECRET, { expiresIn: "15m" });
-    const refreshToken = jwt.sign({ userId: newUserId }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
-    
-    res.status(201).json({ accessToken, refreshToken, user: { id: newUserId, bucketName: bucketName } });
+    const [newUser] = await connection.query('INSERT INTO userLogins (email, password_hash, bucketName) VALUES (?, ?, ?)', [email, passwordHash, bucketName]);
+    const newUserId = newUser.insertId;
+ // createBucket(bucketName);
+    const accessToken = generateAccessToken(newUserId);
+    const refreshToken = generateRefreshToken(newUserId);
+
+    // Set refresh token in HttpOnly cookie
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: false,//process.env.NODE_ENV === 'production', // Use secure cookies in production
+      sameSite: '',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    res.status(201).json({ accessToken, user: { id: newUserId, bucketName } });
   } catch (error) {
     console.error('Signup Error:', error);
     res.status(500).json({ message: 'Internal Server Error' });
@@ -55,52 +66,67 @@ export async function signUp(req, res){
 /**
  * User Login
  */
-export async function login(req, res){
+export async function login(req, res) {
   const { email, password } = req.body;
 
   try {
-    const [users] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+    const [users] = await connection.query('SELECT * FROM userLogins WHERE email = ?', [email]);
     if (users.length === 0) {
-      return res.status(400).json({ message: 'Invalid email or password' });
+      return res.status(400).json({ message: "Invalid email or password" });
     }
 
     const user = users[0];
     const isValidPassword = await bcrypt.compare(password, user.password_hash);
     if (!isValidPassword) {
-      return res.status(400).json({ message: 'Invalid email or password' });
+      return res.status(400).json({ message: "Invalid email or password" });
     }
-    const accessToken = jwt.sign({ userId: newUserId }, process.env.JWT_SECRET, { expiresIn: "15m" });
-    const refreshToken = jwt.sign({ userId: newUserId }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
-    
-    res.status(201).json({ accessToken, refreshToken, user: { id: newUserId, bucketName: bucketName } });
+
+    const accessToken = generateAccessToken(user.userId);
+    const refreshToken = generateRefreshToken(user.userId);
+
+    // Set refresh token in HttpOnly cookie
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', 
+      sameSite: 'Strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    res.status(200).json({ accessToken, user: { id: user.userId, bucketName: user.bucketName } });
   } catch (error) {
     console.error('Login Error:', error);
     res.status(500).json({ message: 'Internal Server Error' });
   }
 };
 
-// This function verifies the refresh token and issues a new access token. 
-// It's crucial for maintaining the user's authenticated state without 
-// frequent logins.
+/**
+ * Refresh Token Endpoint
+ */
 export const refreshToken = async (req, res) => {
-  const { refreshToken } = req.body;
+  const refreshToken = req.cookies.refreshToken;
   if (!refreshToken) {
     return res.status(401).json({ error: "Refresh token required" });
   }
+
   try {
     const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-    const accessToken = jwt.sign({ userId: decoded.userId }, process.env.JWT_SECRET, { expiresIn: "15m" });
-    res.json({ accessToken });
+    const newAccessToken = generateAccessToken(decoded.userId);
+    
+    res.json({ accessToken: newAccessToken });
   } catch (error) {
-    res.status(401).json({ error: "Invalid refresh token" });
+    res.status(401).json({ error: "Invalid or expired refresh token" });
   }
 };
 
 /**
- * User Logout (Handled on frontend by clearing token)
+ * User Logout
  */
-// export async function logout(req, res){
-//   res.json({ message: 'User logged out' }); // Token should be removed from frontend
-// };
+export async function logout(req, res) {
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'Strict',
+  });
 
-
+  res.json({ message: 'User logged out' });
+};

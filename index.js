@@ -6,25 +6,38 @@ import { router as subExpense } from "./routes/subExpense.js";
 import { router as imageUploadRouter } from "./routes/imageUpload.js";
 import {router as authRouter } from "./routes/auth.js";
 import { errorMiddleware } from "./errorMiddleware.js";
+import cookieParser from 'cookie-parser';
 
 dotenv.config();
-var app = express();
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({extended: true}));
+const app = express();
 
-const allowedOrigins = ["http://localhost:8081", "http://receipt-tracking-frontend-v2.s3-website-us-east-1.amazonaws.com", "https://d39orc6f1pail6.cloudfront.net/" ];
-app.use(function (req, res, next) {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.header("Access-Control-Allow-Origin", origin);
-  }
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept"
-  );
-  next();
-});
+// Allowed origins for CORS
+const allowedOrigins = ["http://localhost:8081"]; 
+
+// Middleware for cookie parsing
+app.use(cookieParser());
+
+// CORS configuration for specific origins and credentials
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow only requests from allowed origins
+      if (allowedOrigins.includes(origin) || !origin) {
+        callback(null, true);  // Allow the request
+      } else {
+        callback(new Error('Not allowed by CORS'), false); // Reject other origins
+      }
+    },
+    credentials: true,       // Allow credentials (cookies, authorization headers)
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
+    allowedHeaders: ['Content-Type', 'Authorization'], // Allow certain headers
+  })
+);
+
+// JSON and URL-encoded body parsers
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 
 //routes
 app.use("/api/v1/images", imageUploadRouter);
