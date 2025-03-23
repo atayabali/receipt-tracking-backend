@@ -44,15 +44,16 @@ export async function signUp(req, res) {
     const passwordHash = await bcrypt.hash(password, 10);
     const [newUser] = await connection.query('INSERT INTO userLogins (email, password_hash, bucketName) VALUES (?, ?, ?)', [email, passwordHash, bucketName]);
     const newUserId = newUser.insertId;
- // createBucket(bucketName);
+    createBucket(bucketName);
     const accessToken = generateAccessToken(newUserId);
     const refreshToken = generateRefreshToken(newUserId);
-
+  
+    // console.log(refreshToken);
     // Set refresh token in HttpOnly cookie
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: false,//process.env.NODE_ENV === 'production', // Use secure cookies in production
-      sameSite: '',
+      sameSite: 'Strict',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
@@ -83,15 +84,17 @@ export async function login(req, res) {
 
     const accessToken = generateAccessToken(user.userId);
     const refreshToken = generateRefreshToken(user.userId);
-
+    // console.log("r", refreshToken);
     // Set refresh token in HttpOnly cookie
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', 
+      secure: false, 
       sameSite: 'Strict',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/',  // Ensure cookie is available to all routes
     });
-
+    // console.log(req.cookie);
+    // console.log(req.cookies);
     res.status(200).json({ accessToken, user: { id: user.userId, bucketName: user.bucketName } });
   } catch (error) {
     console.error('Login Error:', error);
@@ -103,6 +106,7 @@ export async function login(req, res) {
  * Refresh Token Endpoint
  */
 export const refreshToken = async (req, res) => {
+  // console.log(req.cookies.refreshToken);
   const refreshToken = req.cookies.refreshToken;
   if (!refreshToken) {
     return res.status(401).json({ error: "Refresh token required" });
