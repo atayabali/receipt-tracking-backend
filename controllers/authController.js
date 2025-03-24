@@ -1,6 +1,6 @@
 
 import bcrypt from 'bcryptjs'; //for password hashing
-import { S3Client, CreateBucketCommand } from "@aws-sdk/client-s3";
+import { S3Client, CreateBucketCommand, PutBucketCorsCommand } from "@aws-sdk/client-s3";
 import jwt from 'jsonwebtoken';
 import { getSqlPool } from '../db.js';
 
@@ -8,32 +8,50 @@ const s3 = new S3Client({ region: "us-east-1" });
 const mySqlPool = await getSqlPool();
 const connection = await mySqlPool.getConnection();
 
-export const createBucket = async (req, res) => {
-  const { bucketIdentifier } = req.body;
+export const createBucket = async (bucketIdentifier) => {
   const bucketName =  `receipts-${bucketIdentifier}`; // Random GUID-based bucket name
 
   try {
     const command = new CreateBucketCommand({ Bucket: bucketName });
     await s3.send(command);
     console.log(`Bucket created: ${bucketName}`);
+
+        // Step 2: Define the CORS configuration
+        const corsRules = [
+          {
+            AllowedOrigins: ["http://localhost:8081"], // Your frontend URL
+            AllowedMethods: ["GET", "POST", "PUT", "DELETE"], // Allow file uploads
+            AllowedHeaders: ["*"], // Allow all headers
+            ExposeHeaders: ["ETag"], // Optional: Expose headers in the response
+            MaxAgeSeconds: 3000
+          }
+        ];
+    
+        // Step 3: Apply the CORS settings
+        const corsCommand = new PutBucketCorsCommand({
+          Bucket: bucketName,
+          CORSConfiguration: { CORSRules: corsRules }
+        });
+        await s3.send(corsCommand);
+        console.log(`CORS set for bucket: ${bucketName}`);
   } catch (error) {
     console.error("Error creating bucket:", error);
   }
 };
 
-const generateAccessToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "15m" });
+const generateAccessToken = (userId, bucketIdentifier) => {
+  return jwt.sign({ userId, bucketIdentifier }, process.env.JWT_SECRET, { expiresIn: "15m" });
 };
 
-const generateRefreshToken = (userId) => {
-  return jwt.sign({ userId }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
+const generateRefreshToken = (userId, bucketIdentifier) => {
+  return jwt.sign({ userId, bucketIdentifier }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
 };
 
 /**
  * User Registration (Sign Up)
  */
 export async function signUp(req, res) {
-  const { email, password, bucketName } = req.body;
+  const { email, password, bucketIdentifier } = req.body;
 
   try {
     const [userExists] = await connection.query('SELECT userId FROM userLogins WHERE email = ?', [email]);
@@ -42,11 +60,11 @@ export async function signUp(req, res) {
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const [newUser] = await connection.query('INSERT INTO userLogins (email, password_hash, bucketName) VALUES (?, ?, ?)', [email, passwordHash, bucketName]);
+    const [newUser] = await connection.query('INSERT INTO userLogins (email, password_hash, bucketIdentifier) VALUES (?, ?, ?)', [email, passwordHash, bucketIdentifier]);
     const newUserId = newUser.insertId;
-    createBucket(bucketName);
-    const accessToken = generateAccessToken(newUserId);
-    const refreshToken = generateRefreshToken(newUserId);
+    createBucket(bucketIdentifier);
+    const accessToken = generateAccessToken(newUserId, bucketIdentifier);
+    const refreshToken = generateRefreshToken(newUserId, bucketIdentifier);
   
     // console.log(refreshToken);
     // Set refresh token in HttpOnly cookie
@@ -57,7 +75,7 @@ export async function signUp(req, res) {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
-    res.status(201).json({ accessToken, user: { id: newUserId, bucketName } });
+    res.status(201).json({ accessToken, user: { id: newUserId, bucketIdentifier } });
   } catch (error) {
     console.error('Signup Error:', error);
     res.status(500).json({ message: 'Internal Server Error' });
@@ -82,8 +100,8 @@ export async function login(req, res) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
 
-    const accessToken = generateAccessToken(user.userId);
-    const refreshToken = generateRefreshToken(user.userId);
+    const accessToken = generateAccessToken(user.userId, user.bucketIdentifier);
+    const refreshToken = generateRefreshToken(user.userId, user.bucketIdentifier);
     // console.log("r", refreshToken);
     // Set refresh token in HttpOnly cookie
     res.cookie('refreshToken', refreshToken, {
@@ -95,7 +113,7 @@ export async function login(req, res) {
     });
     // console.log(req.cookie);
     // console.log(req.cookies);
-    res.status(200).json({ accessToken, user: { id: user.userId, bucketName: user.bucketName } });
+    res.status(200).json({ accessToken, user: { id: user.userId, bucketIdentifier: user.bucketIdentifier } });
   } catch (error) {
     console.error('Login Error:', error);
     res.status(500).json({ message: 'Internal Server Error' });

@@ -41,7 +41,7 @@ app.use(express.urlencoded({ extended: true }));
 
 
 //routes
-app.use("/api/v1/images", imageUploadRouter);
+app.use("/api/v1/images", verifyToken, imageUploadRouter);
 app.use("/api/v1/expenses", verifyToken, expenseRouter);
 app.use("/api/v1/subexpenses", subExpense);
 app.use("/api/v1/auth", authRouter )

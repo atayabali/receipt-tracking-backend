@@ -7,12 +7,12 @@ import {
 import { TextractExpense } from "amazon-textract-response-parser";
 
 const textractClient = new TextractClient({ region: "us-east-1" });
-const bucketName = "image-upload-practice1";
-export const analyzeExpenseObject = async (key) => {
+// const bucketName = "image-upload-practice1";
+export const analyzeExpenseObject = async (key, bucketIdentifier) => {
   const command = new AnalyzeExpenseCommand({
     Document: {
       S3Object: {
-        Bucket: bucketName,
+        Bucket: `receipts-${bucketIdentifier}`,
         Name: key,
       },
     },
@@ -75,10 +75,10 @@ export const formatExpenseResponse = (textractResponse) => {
   return data;
 };
 
-export async function createPresignedUrlWithClient(key, mimeType) {
+export async function createPresignedUrlWithClient(key, mimeType, bucketIdentifier) {
   const client = new S3Client({ region: "us-east-1" });
   const command = new PutObjectCommand({
-    Bucket: bucketName,
+    Bucket: `receipts-${bucketIdentifier}`,
     Key: key,
     ContentType: mimeType,
     // ACL: 'bucket-owner-full-control'
@@ -93,7 +93,7 @@ export async function createPresignedUrlWithClient(key, mimeType) {
 export const getS3Object = async (req, res) => {
   const client = new S3Client({ region: "us-east-1" });
   const command = new GetObjectCommand({
-    Bucket: bucketName,
+    Bucket: `receipts-${req.user.bucketIdentifier}`,
     Key: req.params.objectName,
   })
   try {
