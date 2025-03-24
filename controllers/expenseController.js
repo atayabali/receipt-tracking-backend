@@ -32,7 +32,7 @@ export const getExpenseById = async (req, res, next) => {
   
   async function getExpenseByIdQuery(connection) {
     var expenseId = req.params.id;
-    const [userRows] = await connection.query(queries.checkUserOfExpense, expenseId);
+    const [userRows] = await connection.query(queries.getUserOfExpense, expenseId);
     if(userRows[0].userId !== req.user.userId) throw new Error(`User does not have access to expense`)
     const [rows] = await connection.query(queries.getExpenseById, expenseId);
     console.log(rows);
@@ -66,7 +66,7 @@ export const deleteExpense = async (req, res, next) => {
   async function deleteExpenseQuery(connection) {
     const [existRows] = await connection.query(queries.checkExpenseExistence, expenseId);
     if(!existRows[0].doesExpenseExist) throw new Error("Expense not found");
-    const [userRows] = await connection.query(queries.checkUserOfExpense, expenseId);
+    const [userRows] = await connection.query(queries.getUserOfExpense, expenseId);
     if(userRows[0].userId !== req.user.userId) throw new Error(`User does not have access to expense`)
       //Deleted SubExpenses and Expense
     const [deletedRows] = await connection.query(queries.deleteSubExpenses, expenseId);

@@ -99,7 +99,7 @@ export async function login(req, res) {
     if (!isValidPassword) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
-
+    console.log("login", user);
     const accessToken = generateAccessToken(user.userId, user.bucketIdentifier);
     const refreshToken = generateRefreshToken(user.userId, user.bucketIdentifier);
     // console.log("r", refreshToken);
@@ -132,7 +132,7 @@ export const refreshToken = async (req, res) => {
 
   try {
     const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-    const newAccessToken = generateAccessToken(decoded.userId);
+    const newAccessToken = generateAccessToken(decoded.userId, decoded.bucketIdentifier);
     
     res.json({ accessToken: newAccessToken });
   } catch (error) {

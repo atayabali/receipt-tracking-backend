@@ -15,6 +15,8 @@ async function tryCatchWrapper(fn, next) {
 
 export const getSubExpensesByExpenseId = async (req, res, next) => {
   async function getSubExpensesQuery(connection) {
+    const [userRows] = await connection.query(queries.getUserOfExpense, req.params.expenseId);
+    if(userRows[0].userId !== req.user.userId) throw new Error(`User does not have access to expense`)
     const [rows] = await connection.query(
       queries.getSubExpensesByExpenseId, [req.params.expenseId]
     );
@@ -27,7 +29,7 @@ export const getSubExpensesByExpenseId = async (req, res, next) => {
 export const getAllOrSearchSubExpenses = async (req, res, next) => {
   var getSql = queries.getSubExpensesWithDate;
   if (req.params.searchQuery) {
-    getSql = getSql + `WHERE userId like name like '%${req.params.searchQuery}%' `
+    getSql = getSql + `WHERE userId = ${req.user.userId} AND name like '%${req.params.searchQuery}%' `
   }
   getSql = getSql + `ORDER BY date desc`
   async function getSubExpensesQuery(connection) {
