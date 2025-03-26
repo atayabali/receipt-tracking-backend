@@ -1,13 +1,12 @@
 import mysql from 'mysql2/promise'
 import dotenv from 'dotenv';
-import { getRDSSecret } from './secretsManager.js';
+import { getRDSSecret, useAws } from './secretsManager.js';
 dotenv.config(); //loads in env variables from .env file
 
 export const getSqlPool = async () => {
     let sqlPool;
-    var useAWS = true;
 
-    if(useAWS){
+    if(useAws){
         var poolVars = await getRDSSecret();
         sqlPool = mysql.createPool({
             host: poolVars.host,

@@ -7,18 +7,19 @@ import {
     GetSecretValueCommand,
   } from "@aws-sdk/client-secrets-manager";
   
-  const secret_name = "RDS_SECRET";
   
   const client = new SecretsManagerClient({
     region: "us-east-1",
   });
+
+  export const useAws = true;
   export const getRDSSecret = async () => {
     let response;
   
     try {
       response = await client.send(
         new GetSecretValueCommand({
-          SecretId: secret_name,
+          SecretId: "RDS_SECRET",
           VersionStage: "AWSCURRENT", // VersionStage defaults to AWSCURRENT if unspecified
         })
       );
@@ -30,4 +31,28 @@ import {
     
     const secret = response.SecretString;
     return JSON.parse(secret);
+  }
+
+  export const getJwtSecret = async (secretType) => {
+    if(!useAws && secretType === 'jwt') return process.env.JWT_SECRET;
+    if(!useAws && secretType === 'refresh') return process.env.REFRESH_TOKEN_SECRET;
+
+    let response;
+  
+    try {
+      response = await client.send(
+        new GetSecretValueCommand({
+          SecretId: "JWT_SECRET",
+          VersionStage: "AWSCURRENT", // VersionStage defaults to AWSCURRENT if unspecified
+        })
+      );
+    } catch (error) {
+      // For a list of exceptions thrown, see
+      // https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
+      throw error;
+    }
+    var secrets = JSON.parse(response.SecretString);
+    // console.log(secrets);
+    if(secretType === 'jwt') return secrets.JWT_SECRET;
+    if(secretType === 'refresh') return secrets.REFRESH_TOKEN_SECRET;
   }

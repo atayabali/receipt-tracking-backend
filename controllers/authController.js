@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'; //for password hashing
 import { S3Client, CreateBucketCommand, PutBucketCorsCommand } from "@aws-sdk/client-s3";
 import jwt from 'jsonwebtoken';
 import { getSqlPool } from '../db.js';
+import { getJwtSecret } from '../secretsManager.js';
 
 const s3 = new S3Client({ region: "us-east-1" });
 const mySqlPool = await getSqlPool();
@@ -39,12 +40,16 @@ export const createBucket = async (bucketIdentifier) => {
   }
 };
 
-const generateAccessToken = (userId, bucketIdentifier) => {
-  return jwt.sign({ userId, bucketIdentifier }, process.env.JWT_SECRET, { expiresIn: "15m" });
+const generateAccessToken = async (userId, bucketIdentifier) => {
+  var jwt_secret = await getJwtSecret("jwt");
+  // console.log(jwt_secret)
+  return jwt.sign({ userId, bucketIdentifier }, jwt_secret, { expiresIn: "15m" });
 };
 
-const generateRefreshToken = (userId, bucketIdentifier) => {
-  return jwt.sign({ userId, bucketIdentifier }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
+const generateRefreshToken = async (userId, bucketIdentifier) => {
+  var refresh_secret = await getJwtSecret("refresh");
+  // console.log(refresh_secret)
+  return jwt.sign({ userId, bucketIdentifier }, refresh_secret, { expiresIn: "7d" });
 };
 
 /**
@@ -63,9 +68,9 @@ export async function signUp(req, res) {
     const [newUser] = await connection.query('INSERT INTO userLogins (email, password_hash, bucketIdentifier) VALUES (?, ?, ?)', [email, passwordHash, bucketIdentifier]);
     const newUserId = newUser.insertId;
     createBucket(bucketIdentifier);
-    const accessToken = generateAccessToken(newUserId, bucketIdentifier);
-    const refreshToken = generateRefreshToken(newUserId, bucketIdentifier);
-  
+    const accessToken = await generateAccessToken(newUserId, bucketIdentifier);
+    const refreshToken = await generateRefreshToken(newUserId, bucketIdentifier);
+    // console.log("sign up refreshToken", refreshToken);
     // console.log(refreshToken);
     // Set refresh token in HttpOnly cookie
     res.cookie('refreshToken', refreshToken, {
@@ -99,9 +104,10 @@ export async function login(req, res) {
     if (!isValidPassword) {
       return res.status(400).json({ message: "Invalid email or password" });
     }
-    console.log("login", user);
-    const accessToken = generateAccessToken(user.userId, user.bucketIdentifier);
-    const refreshToken = generateRefreshToken(user.userId, user.bucketIdentifier);
+    // console.log("login", user);
+    const accessToken = await generateAccessToken(user.userId, user.bucketIdentifier);
+    const refreshToken = await generateRefreshToken(user.userId, user.bucketIdentifier);
+    // console.log("login refreshToken", refreshToken);
     // console.log("r", refreshToken);
     // Set refresh token in HttpOnly cookie
     res.cookie('refreshToken', refreshToken, {
@@ -131,9 +137,12 @@ export const refreshToken = async (req, res) => {
   }
 
   try {
-    const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-    const newAccessToken = generateAccessToken(decoded.userId, decoded.bucketIdentifier);
-    
+    var refresh_secret = await getJwtSecret("refresh");
+    // console.log("refreshToken", refreshToken);
+    const decoded = jwt.verify(refreshToken, refresh_secret);
+    // console.log("refresh_secret", refresh_secret);
+    const newAccessToken = await generateAccessToken(decoded.userId, decoded.bucketIdentifier);
+    // console.log('newb', newAccessToken);
     res.json({ accessToken: newAccessToken });
   } catch (error) {
     res.status(401).json({ error: "Invalid or expired refresh token" });

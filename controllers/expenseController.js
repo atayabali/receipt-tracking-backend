@@ -35,13 +35,13 @@ export const getExpenseById = async (req, res, next) => {
     const [userRows] = await connection.query(queries.getUserOfExpense, expenseId);
     if(userRows[0].userId !== req.user.userId) throw new Error(`User does not have access to expense`)
     const [rows] = await connection.query(queries.getExpenseById, expenseId);
-    console.log(rows);
+    // console.log(rows);
     if(rows.length === 0){
       throw new Error("Expense not found");
     }
     res.send(rows);
   }
-  console.log(req.user);
+  // console.log(req.user);
   await tryCatchWrapper(getExpenseByIdQuery, next);
 };
 

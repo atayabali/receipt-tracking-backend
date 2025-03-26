@@ -91,7 +91,7 @@ export async function createPresignedUrlWithClient(key, mimeType, bucketIdentifi
 }
 
 export const getS3Object = async (req, res) => {
-  console.log("r", req.user);
+  // console.log("r", req.user);
   const client = new S3Client({ region: "us-east-1" });
   const command = new GetObjectCommand({
     Bucket: `receipts-${req.user.bucketIdentifier}`,

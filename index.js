@@ -13,7 +13,7 @@ dotenv.config();
 const app = express();
 
 // Allowed origins for CORS
-const allowedOrigins = ["http://localhost:8081"]; 
+const allowedOrigins = ["http://localhost:8081", "http://receipt-tracking-frontend-v2.s3-website-us-east-1.amazonaws.com"]; 
 
 // Middleware for cookie parsing
 app.use(cookieParser());

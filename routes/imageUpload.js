@@ -8,13 +8,13 @@ import {
 const router = express.Router();
 
 router.post("/s3Url", async (req, res) => {
-  console.log(req.user);
+  // console.log(req.user);
   var presignedUrl = await createPresignedUrlWithClient(
     req.body.fileName,
     req.body.mimeType,
     req.user.bucketIdentifier
   );
-  console.log(presignedUrl);
+  // console.log(presignedUrl);
   res.send({ url: presignedUrl });
 });
 
